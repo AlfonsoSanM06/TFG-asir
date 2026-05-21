@@ -1,0 +1,29 @@
+{{- /*
+  ServiceMonitor para Prometheus Operator.
+  Monitoriza el puerto 'metrics' del Service de MySQL (mysqld-exporter en el subchart).
+  NOTA: el selector apunta a las labels extra que el subchart añade al Service
+  (app: wordpress, tier: mysql) para ser descubierto desde el chart padre.
+*/ -}}
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "wordpress-mysql.fullname" . }}-sm
+  namespace: {{ .Values.serviceMonitor.namespace | default .Values.global.namespace }}
+  labels:
+    {{- include "wordpress-mysql.labels" . | nindent 4 }}
+    # Label que usa el Prometheus Operator para descubrir ServiceMonitors
+    release: {{ .Values.serviceMonitor.releaseLabel }}
+spec:
+  endpoints:
+    - interval: {{ .Values.serviceMonitor.interval }}
+      port: metrics
+  selector:
+    matchLabels:
+      # Estas labels las establece explícitamente el 02-mysql-deployment.yaml del subchart
+      app: wordpress
+      tier: mysql
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.global.namespace }}
+{{- end }}

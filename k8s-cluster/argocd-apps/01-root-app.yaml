@@ -1,0 +1,40 @@
+# =============================================================================
+# Application: root-app (App-of-Apps pattern)
+# Esta Application gestiona TODAS las demás Applications del clúster.
+# ArgoCD monitoriza el directorio k8s-cluster/argocd-apps/ del repositorio.
+# Cuando se añade un nuevo fichero .yaml en ese directorio, ArgoCD lo despliega
+# automáticamente sin intervención manual.
+#
+# Flujo:
+#   GitHub (push) → ArgoCD detecta cambio → sincroniza root-app
+#   root-app descubre nuevos Application CRDs → los crea/actualiza en el clúster
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root-app
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/part-of: arq3d-gitops
+spec:
+  project: arq3d-prod
+
+  source:
+    repoURL: https://github.com/AlfonsoSanM06/TFG-asir
+    targetRevision: main
+    # Directorio que contiene todos los Application CRDs
+    path: k8s-cluster/argocd-apps
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true       # Borra Applications huérfanas del clúster
+      selfHeal: true    # Restaura cambios manuales con kubectl
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

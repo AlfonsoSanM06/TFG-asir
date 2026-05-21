@@ -1,0 +1,21 @@
+---
+# =============================================================================
+# roles/ldap/tasks/main.yml — Orquestador del rol
+# =============================================================================
+
+- name: "LDAP | Instalar paquetes"
+  ansible.builtin.include_tasks: install.yml
+  tags: [ldap, install]
+
+- name: "LDAP | Configurar instancia slapd"
+  ansible.builtin.include_tasks: configure.yml
+  tags: [ldap, configure]
+
+- name: "LDAP | Crear estructura DIT (árbol de directorio)"
+  ansible.builtin.include_tasks: structure.yml
+  tags: [ldap, structure]
+
+- name: "LDAP | Aplicar política de contraseñas"
+  ansible.builtin.include_tasks: ppolicy.yml
+  tags: [ldap, ppolicy]
+  when: ldap_ppolicy_enabled

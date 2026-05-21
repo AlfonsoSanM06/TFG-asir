@@ -1,0 +1,33 @@
+# /etc/ssh/sshd_config — Gestionado por Ansible (rol: hardening). No editar manualmente.
+
+Port {{ ssh_port }}
+Protocol 2
+AddressFamily inet
+
+PermitRootLogin {{ ssh_permit_root_login }}
+PasswordAuthentication {{ ssh_password_auth }}
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+MaxAuthTries {{ ssh_max_auth_tries }}
+LoginGraceTime {{ ssh_login_grace_time }}
+AllowUsers {{ ssh_allowed_users }}
+
+ClientAliveInterval 300
+ClientAliveCountMax 2
+MaxSessions 10
+
+X11Forwarding no
+AllowAgentForwarding no
+AllowTcpForwarding no
+PermitEmptyPasswords no
+PermitUserEnvironment no
+IgnoreRhosts yes
+
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,ecdh-sha2-nistp521
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
+
+LogLevel VERBOSE
+SyslogFacility AUTH
+
+Subsystem sftp /usr/lib/openssh/sftp-server

@@ -1,0 +1,21 @@
+apiVersion: v2
+name: wordpress-mysql
+description: |
+  Helm chart para desplegar WordPress con MySQL en Kubernetes.
+  WordPress se despliega en el chart principal y MySQL como subchart dependiente.
+type: application
+
+# Versión del chart. Incrementar en cada cambio de templates o values.
+version: 0.2.0
+
+# Versión de la aplicación WordPress desplegada.
+appVersion: "6.2.1"
+
+maintainers:
+  - name: Alfonso
+    email: devops@example.com
+
+dependencies:
+  - name: mysql-subchart
+    version: "0.1.0"
+    repository: "file://charts/mysql-subchart"

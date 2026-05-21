@@ -1,0 +1,55 @@
+---
+# =============================================================================
+# tasks/configure.yml — Ajusta la configuración de slapd vía cn=config (OLC)
+# Usa módulos LDIF para que los cambios sean idempotentes.
+# =============================================================================
+
+- name: "LDAP CFG | Cargar schemas necesarios (cosine, nis, inetorgperson)"
+  community.general.ldap_attrs:
+    dn: "cn=schema,cn=config"
+    attributes:
+      olcObjectClasses: []
+    server_uri: "{{ ldap_server_uri }}"
+    bind_dn: "cn=admin,cn=config"
+    bind_pw: "{{ ldap_admin_password }}"
+  # Los schemas se cargan con ldapadd directamente; esta task verifica existencia
+  # Se usa command como fallback idempotente con 'creates'
+  ignore_errors: true
+
+- name: "LDAP CFG | Añadir schema cosine si no existe"
+  ansible.builtin.command: >
+    ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/ldap/schema/cosine.ldif
+  args:
+    creates: /etc/ldap/slapd.d/cn=config/cn=schema/cn={1}cosine.ldif
+  failed_when: false
+
+- name: "LDAP CFG | Añadir schema nis si no existe"
+  ansible.builtin.command: >
+    ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/ldap/schema/nis.ldif
+  args:
+    creates: /etc/ldap/slapd.d/cn=config/cn=schema/cn={2}nis.ldif
+  failed_when: false
+
+- name: "LDAP CFG | Añadir schema inetorgperson si no existe"
+  ansible.builtin.command: >
+    ldapadd -Y EXTERNAL -H ldapi:/// -f /etc/ldap/schema/inetorgperson.ldif
+  args:
+    creates: /etc/ldap/slapd.d/cn=config/cn=schema/cn={3}inetorgperson.ldif
+  failed_when: false
+
+- name: "LDAP CFG | Desplegar slapd.conf global (log level, TLS)"
+  ansible.builtin.template:
+    src: slapd_global.ldif.j2
+    dest: /tmp/slapd_global.ldif
+    mode: "0600"
+
+- name: "LDAP CFG | Aplicar configuración global vía OLC"
+  ansible.builtin.command: >
+    ldapmodify -Y EXTERNAL -H ldapi:/// -f /tmp/slapd_global.ldif
+  changed_when: true
+  notify: restart slapd
+
+- name: "LDAP CFG | Eliminar LDIF temporal"
+  ansible.builtin.file:
+    path: /tmp/slapd_global.ldif
+    state: absent

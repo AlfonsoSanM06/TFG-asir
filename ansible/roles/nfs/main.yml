@@ -1,0 +1,45 @@
+---
+# =============================================================================
+# roles/nfs/tasks/main.yml
+# Monta el share NFS del TrueNAS (VLAN 20) de forma persistente.
+# =============================================================================
+
+- name: "NFS | Instalar nfs-common"
+  ansible.builtin.apt:
+    name: nfs-common
+    state: present
+    update_cache: true
+
+- name: "NFS | Crear directorio de montaje"
+  ansible.builtin.file:
+    path: "{{ nfs_mount_point }}"
+    state: directory
+    owner: "{{ nfs_mount_owner }}"
+    group: "{{ nfs_mount_group }}"
+    mode: "{{ nfs_mount_mode }}"
+
+- name: "NFS | Verificar conectividad con TrueNAS (puerto 2049)"
+  ansible.builtin.wait_for:
+    host: "{{ nfs_server_ip }}"
+    port: 2049
+    timeout: 30
+    msg: >-
+      TrueNAS ({{ nfs_server_ip }}:2049) no responde.
+      Verifica ruta a VLAN 20 y que el export NFS está activo.
+
+- name: "NFS | Montar share y añadir a /etc/fstab"
+  ansible.posix.mount:
+    src: "{{ nfs_server_ip }}:{{ nfs_export_path }}"
+    path: "{{ nfs_mount_point }}"
+    fstype: nfs
+    opts: "{{ nfs_mount_options }}"
+    state: mounted
+    dump: "0"
+    passno: "0"
+  notify: verify nfs mount
+
+- name: "NFS | Confirmar que el mountpoint está activo"
+  ansible.builtin.command: "mountpoint -q {{ nfs_mount_point }}"
+  register: mp_check
+  changed_when: false
+  failed_when: mp_check.rc != 0

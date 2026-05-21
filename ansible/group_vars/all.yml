@@ -1,0 +1,70 @@
+---
+# =============================================================================
+# group_vars/all.yml
+# Variables globales compartidas por todos los hosts.
+# Valores sensibles (contraseñas, tokens) van en group_vars/all/vault.yml
+# cifrado con ansible-vault.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Sistema base
+# -----------------------------------------------------------------------------
+system_locale: "es_ES.UTF-8"
+system_timezone: "Europe/Madrid"
+
+# -----------------------------------------------------------------------------
+# Hardening SSH
+# -----------------------------------------------------------------------------
+ssh_port: 22
+ssh_permit_root_login: "no"
+ssh_password_authentication: "no"
+ssh_max_auth_tries: 3
+ssh_client_alive_interval: 300
+ssh_client_alive_count_max: 2
+ssh_allowed_users:
+  - arq3d
+
+# -----------------------------------------------------------------------------
+# Firewall (ufw)
+# -----------------------------------------------------------------------------
+# Los puertos abiertos en TODOS los nodos.
+firewall_allowed_tcp_ports:
+  - "{{ ssh_port }}"   # SSH
+
+# -----------------------------------------------------------------------------
+# NFS — TrueNAS (VLAN 20)
+# -----------------------------------------------------------------------------
+truenas_server_ip: "192.168.20.100"          # IP del TrueNAS en VLAN 20.
+nfs_mount_point: "/mnt/nfs/arq3d-data"       # Ruta local en cada VM.
+nfs_export_path: "/mnt/pool/arq3d-data"      # Export del TrueNAS.
+nfs_options: "rw,sync,hard,intr,rsize=131072,wsize=131072,timeo=14"
+nfs_owner: arq3d
+nfs_group: arq3d
+
+# -----------------------------------------------------------------------------
+# K3s
+# -----------------------------------------------------------------------------
+k3s_version: "v1.29.4+k3s1"
+k3s_master_ip: "192.168.10.10"
+k3s_api_port: 6443
+k3s_flannel_backend: "vxlan"               # Compatible con la mayoría de switches.
+k3s_cluster_cidr: "10.42.0.0/16"           # Red interna de Pods.
+k3s_service_cidr: "10.43.0.0/16"           # Red interna de Services.
+
+# Directorio de configuración de K3s en los nodos
+k3s_config_dir: "/etc/rancher/k3s"
+
+# Fichero donde K3s almacena el token de unión de workers
+k3s_token_file: "/var/lib/rancher/k3s/server/node-token"
+
+# URL del script de instalación oficial de K3s
+k3s_install_script_url: "https://get.k3s.io"
+
+# Permisos del kubeconfig generado en el master
+k3s_kubeconfig_mode: "0644"
+
+# Args extra del server (flannel backend + CIDRs ya en config.yaml; esto es para extras)
+k3s_server_extra_args: ""
+
+# Token de unión de workers — cifrado en vault.yml
+k3s_token: "{{ vault_k3s_token }}"

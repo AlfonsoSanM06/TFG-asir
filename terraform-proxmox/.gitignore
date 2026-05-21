@@ -1,0 +1,24 @@
+# =============================================================================
+# .gitignore — terraform/
+# Evita commitear estado, credenciales y caché al repositorio.
+# =============================================================================
+
+# State files — NUNCA en Git (contienen IPs, UUIDs y a veces secrets en claro).
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Credenciales reales (solo el .example va al repo).
+terraform.tfvars
+*.auto.tfvars
+
+# Directorio de plugins descargados por `terraform init`.
+.terraform/
+.terraform.lock.hcl
+
+# Planes binarios (pueden contener datos sensibles).
+*.tfplan
+
+# Logs de depuración.
+crash.log
+crash.*.log

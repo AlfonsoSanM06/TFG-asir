@@ -1,0 +1,8 @@
+# /etc/rancher/k3s/config.yaml — K3s Agent (Worker)
+# Gestionado por Ansible (rol: k3s). No editar manualmente.
+
+server: https://{{ k3s_master_ip }}:6443
+token: {{ k3s_node_token }}
+
+node-ip: {{ ansible_host }}
+flannel-iface: eth0

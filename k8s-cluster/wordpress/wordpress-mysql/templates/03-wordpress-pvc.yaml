@@ -1,0 +1,19 @@
+{{- /*
+  PVC de WordPress para almacenamiento persistente de /var/www/html
+*/ -}}
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "wordpress-mysql.pvcName" . }}
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "wordpress-mysql.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ include "wordpress-mysql.storageClass" . }}
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ include "wordpress-mysql.storageSize" . }}
+{{- end }}

@@ -1,0 +1,6 @@
+dependencies:
+- name: mysql-subchart
+  repository: file://charts/mysql-subchart
+  version: 0.1.0
+digest: sha256:5cb5d9fc352598e1a1ca47642d7c1df997dc89cc17a9abafbbc7ab20f35266cb
+generated: "2026-04-06T08:35:50.332192284+02:00"

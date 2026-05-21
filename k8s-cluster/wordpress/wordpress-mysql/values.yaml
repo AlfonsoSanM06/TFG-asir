@@ -1,0 +1,187 @@
+# =============================================================================
+# values.yaml — Chart Principal WordPress-MySQL
+# =============================================================================
+# Valores globales heredados por todos los subcharts (via .Values.global)
+global:
+  imageRegistry: ""
+  # imagePullSecrets solo es necesario para registros privados.
+  # wordpress:6.2.1-apache y mysql:8.0 son imágenes públicas de Docker Hub.
+  # Dejar vacío para evitar ImagePullBackOff si el secret 'regcred' no existe.
+  imagePullSecrets: []
+  namespace: wp
+  storageClass: "standard"   # Minikube. En K3s+TrueNAS: "nfs-client"
+  storageSize: 1Gi
+  environment: prod
+  domain: alfonso.local
+
+# -----------------------------------------------------------------------------
+# WordPress
+# -----------------------------------------------------------------------------
+replicaCount: 3
+
+image:
+  repository: wordpress
+  tag: "6.2.1-apache"        # Tag explícito; no depende de appVersion del Chart
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+nameOverride: "wordpress-dev"
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: "wordpress-service"
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+securityContext: {}
+
+# Servicio HTTP de WordPress
+service:
+  type: ClusterIP
+  port: 80
+
+# Ingress para WordPress
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  host: ""                   # Si está vacío se usa global.domain
+  tls: []
+
+# Almacenamiento persistente de WordPress (/var/www/html)
+persistence:
+  enabled: true
+  claimName: ""              # Si vacío se genera como <release>-wp-pvc
+  storageClassName: ""       # Si vacío se usa global.storageClass
+  size: ""                   # Si vacío se usa global.storageSize
+  accessMode: ReadWriteOnce
+
+# Variables de entorno del contenedor WordPress
+wordpress:
+  dbHost: ""                 # Si vacío: "<release>-mysql-subchart" (Headless DNS)
+  dbName: wordpress
+  dbUser: wordpress
+  # La password se lee del Secret del subchart mysql
+  secretName: ""             # Si vacío: "<release>-mysql-subchart-secret"
+  secretKey: password
+
+# ServiceMonitor para Prometheus (monitorización de mysql-exporter)
+serviceMonitor:
+  enabled: true
+  namespace: ""              # Si vacío se usa global.namespace
+  releaseLabel: "alfonso-monitor"
+  interval: 30s
+
+# Recursos del contenedor WordPress
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+livenessProbe:
+  httpGet:
+    path: /wp-login.php
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 6
+
+readinessProbe:
+  httpGet:
+    path: /wp-login.php
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Volúmenes / VolumeMounts adicionales (para uso avanzado)
+extraVolumes: []
+extraVolumeMounts: []
+
+# -----------------------------------------------------------------------------
+# Subchart MySQL — los valores aquí sobreescriben mysql-subchart/values.yaml
+# Prefijo obligatorio: nombre del subchart tal y como aparece en Chart.yaml
+# -----------------------------------------------------------------------------
+mysql-subchart:
+  image:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+
+  exporter:
+    image:
+      repository: prom/mysqld-exporter
+      tag: "v0.15.0"
+      pullPolicy: IfNotPresent
+    enabled: true
+
+  mysql:
+    database: wordpress
+    user: wordpress
+    # Las passwords NO se definen aquí.
+    # Se inyectan desde el SealedSecret 'wordpress-mysql-secrets'
+    # que ArgoCD despliega desde k8s-cluster/argocd-apps/03-sealed-secret.yaml
+    # El subchart lee el Secret via secretKeyRef en el Deployment.
+    password: ""      # Placeholder — se sobreescribe por el SealedSecret
+    rootPassword: ""  # Placeholder — se sobreescribe por el SealedSecret
+
+  persistence:
+    enabled: true
+    storageClassName: ""     # hereda global.storageClass
+    size: ""                 # hereda global.storageSize
+    accessMode: ReadWriteOnce
+
+  service:
+    port: 3306
+    metricsPort: 9104
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  livenessProbe:
+    exec:
+      command:
+        - bash
+        - "-c"
+        - "mysqladmin ping -u root -p${MYSQL_ROOT_PASSWORD}"
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    exec:
+      command:
+        - bash
+        - "-c"
+        - "mysql -u root -p${MYSQL_ROOT_PASSWORD} -e 'SELECT 1'"
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3

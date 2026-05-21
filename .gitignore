@@ -1,0 +1,217 @@
+# =============================================================================
+# .gitignore — TFG-ASIR / ARQ3D Infrastructure
+# Cubre: Terraform, Ansible, Kubernetes/Helm, Sealed Secrets, SO y editores.
+# Regla de oro: si contiene credenciales, estado o datos derivados → ignorar.
+# =============================================================================
+
+
+# =============================================================================
+# TERRAFORM
+# =============================================================================
+
+# Estado local — contiene IPs, UUIDs y en ocasiones secretos en claro.
+# Usar backend remoto (MinIO/S3) para compartirlo de forma segura.
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Planes binarios — pueden contener valores de variables sensibles.
+*.tfplan
+*.plan
+
+# Valores reales de variables — solo el .example va al repositorio.
+terraform.tfvars
+*.auto.tfvars
+!*.tfvars.example
+
+# Directorio de plugins descargados por `terraform init`.
+.terraform/
+**/.terraform/
+
+# Lock file de providers — se puede commitear en equipos; se ignora aquí
+# para evitar conflictos entre versiones del desarrollador y CI.
+# Descomenta la línea siguiente si quieres fijarlo en el repo:
+# !.terraform.lock.hcl
+.terraform.lock.hcl
+
+# Logs de crash del provider.
+crash.log
+crash.*.log
+
+# Exportaciones de output para inventario Ansible (datos derivados).
+inventory_vars.json
+
+
+# =============================================================================
+# ANSIBLE
+# =============================================================================
+
+# Vault password file — NUNCA al repositorio.
+.vault_pass
+.vault_password
+vault_pass.txt
+vault_password.txt
+*.vault_pass
+
+# Caché de facts de hosts (generada automáticamente por Ansible).
+.ansible/
+fact_cache/
+retry_files/
+*.retry
+
+# Logs de ejecución locales.
+ansible.log
+*.ansible.log
+
+# Inventario dinámico generado por scripts (datos derivados).
+inventory_vars.json
+inventory_generated.yml
+
+
+# =============================================================================
+# KUBERNETES / HELM
+# =============================================================================
+
+# Kubeconfig local — contiene certificados y tokens del clúster.
+kubeconfig
+*.kubeconfig
+kubeconfig-*
+.kube/
+
+# Valores de Helm con secretos reales.
+# El .example correspondiente sí va al repositorio.
+values-secrets.yaml
+values-secrets.yml
+**/values-secrets.yaml
+**/values-secrets.yml
+!**/values-secrets.yaml.example
+!**/values-secrets.yml.example
+
+# Paquetes Helm empaquetados (artefactos derivados del build).
+*.tgz
+
+# Helm chart dependencies descargadas (equivalente a node_modules).
+# Se regeneran con `helm dependency update`.
+charts/
+!charts/.gitkeep
+
+# Renders temporales de templates para debug.
+helm-debug-*.yaml
+rendered-*.yaml
+
+
+# =============================================================================
+# SEALED SECRETS
+# =============================================================================
+
+# Clave de backup del controlador Sealed Secrets.
+# Se exporta con: kubectl get secret -n kube-system sealed-secrets-key -o yaml
+# Si se pierde, los SealedSecrets son irrecuperables — guárdala en un vault seguro.
+sealed-secrets-key*.yaml
+sealed-secrets-backup*.yaml
+
+# Secretos sin sellar — NUNCA al repositorio.
+*-secret.yaml
+*-secrets.yaml
+!*sealed-secret*.yaml
+!*sealedsecret*.yaml
+
+
+# =============================================================================
+# CREDENCIALES Y CERTIFICADOS
+# =============================================================================
+
+# Claves privadas SSH y PEM.
+*.pem
+*.key
+*_rsa
+*_ed25519
+*_ecdsa
+!*.pub
+
+# Certificados TLS (los .crt públicos son opcionales; los .key nunca).
+*.crt
+*.p12
+*.pfx
+
+# Ficheros de entorno con secretos exportados.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Tokens y credenciales en formato genérico.
+*.token
+credentials.json
+credentials.yml
+service-account*.json
+
+
+# =============================================================================
+# SISTEMA OPERATIVO
+# =============================================================================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+.nfs*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+
+# =============================================================================
+# EDITORES E IDEs
+# =============================================================================
+
+# VS Code (compartir solo .vscode/extensions.json si se quiere)
+.vscode/
+!.vscode/extensions.json
+
+# JetBrains (IntelliJ, GoLand, PyCharm…)
+.idea/
+*.iml
+*.iws
+
+# Vim / Neovim
+*.swp
+*.swo
+*.swn
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+Session.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+.#*
+
+
+# =============================================================================
+# LOGS Y ARTEFACTOS TEMPORALES
+# =============================================================================
+
+# Logs genéricos.
+*.log
+logs/
+!logs/.gitkeep
+
+# Directorios temporales de trabajo.
+tmp/
+temp/
+.tmp/
+
+# Artefactos de CI/CD locales.
+.cache/
+dist/
+build/
+out/

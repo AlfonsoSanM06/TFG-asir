@@ -1,0 +1,7 @@
+# /tmp/slapd_global.ldif — Configuración OLC global de slapd
+# Generado por Ansible (rol: ldap). No editar manualmente.
+
+dn: cn=config
+changetype: modify
+replace: olcLogLevel
+olcLogLevel: {{ ldap_log_level }}

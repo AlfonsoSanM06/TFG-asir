@@ -1,0 +1,56 @@
+---
+# =============================================================================
+# INVENTORY — arq3d-infrastructure
+# IPs estáticas generadas por Terraform (VLAN 10: 192.168.10.0/24).
+# Actualiza este fichero con: terraform output -json | python3 scripts/gen_inventory.py
+# =============================================================================
+
+all:
+  vars:
+    ansible_user: arq3d                        # Usuario Cloud-Init creado por Terraform.
+    ansible_ssh_private_key_file: ~/.ssh/id_ed25519
+    ansible_ssh_common_args: >-
+      -o StrictHostKeyChecking=accept-new
+      -o ServerAliveInterval=30
+      -o ConnectTimeout=10
+    ansible_python_interpreter: /usr/bin/python3
+
+  children:
+
+    # -------------------------------------------------------------------------
+    # Nodos del clúster Kubernetes (master + workers)
+    # -------------------------------------------------------------------------
+    k8s_cluster:
+      children:
+
+        k8s_masters:
+          hosts:
+            k8s-master-01:
+              ansible_host: 192.168.10.10
+              k3s_role: master
+
+        k8s_workers:
+          hosts:
+            k8s-worker-01:
+              ansible_host: 192.168.10.11
+              k3s_role: worker
+            k8s-worker-02:
+              ansible_host: 192.168.10.12
+              k3s_role: worker
+
+    # -------------------------------------------------------------------------
+    # Servidor LDAP — independiente del clúster K8s
+    # -------------------------------------------------------------------------
+    identity_servers:
+      hosts:
+        ldap-server:
+          ansible_host: 192.168.10.20
+
+    # -------------------------------------------------------------------------
+    # Grupo virtual: todos los nodos gestionados por Ansible
+    # (útil para playbooks de hardening y NFS transversales)
+    # -------------------------------------------------------------------------
+    managed:
+      children:
+        k8s_cluster:
+        identity_servers:

@@ -1,0 +1,51 @@
+---
+# =============================================================================
+# tasks/install_worker.yml — Une el nodo worker al clúster K3s
+# Requiere que k3s_node_token esté disponible (inyectado por el playbook).
+# =============================================================================
+
+- name: "K3s WORKER | Crear directorio de configuración"
+  ansible.builtin.file:
+    path: "{{ k3s_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: "K3s WORKER | Desplegar config de agent"
+  ansible.builtin.template:
+    src: k3s_agent_config.yaml.j2
+    dest: "{{ k3s_config_dir }}/config.yaml"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: restart k3s agent
+
+- name: "K3s WORKER | Descargar e instalar K3s agent (versión pinada)"
+  ansible.builtin.shell: |
+    curl -sfL {{ k3s_install_script_url }} | \
+    INSTALL_K3S_VERSION={{ k3s_version }} \
+    K3S_URL=https://{{ k3s_master_ip }}:6443 \
+    K3S_TOKEN={{ k3s_node_token }} \
+    INSTALL_K3S_EXEC="agent {{ k3s_agent_extra_args }}" \
+    sh -
+  args:
+    creates: /usr/local/bin/k3s
+  no_log: true    # No loguear el token en el output de Ansible
+
+- name: "K3s WORKER | Habilitar e iniciar k3s-agent"
+  ansible.builtin.systemd:
+    name: k3s-agent
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: "K3s WORKER | Verificar que el nodo aparece en el clúster"
+  ansible.builtin.command: >
+    k3s kubectl get node {{ inventory_hostname }} -o jsonpath='{.status.conditions[-1].type}'
+  delegate_to: k8s-master-01
+  register: worker_status
+  until: worker_status.stdout == "Ready"
+  retries: 20
+  delay: 10
+  changed_when: false

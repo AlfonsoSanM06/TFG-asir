@@ -1,0 +1,65 @@
+# =============================================================================
+# Application: wordpress-arq3d
+# Despliega el chart Helm wordpress-mysql en el namespace wp.
+# ArgoCD sincroniza este estado desde GitHub → K8s automáticamente.
+#
+# Prerequisitos:
+#   - Namespace wp creado (syncOptions: CreateNamespace=true)
+#   - Secret wordpress-mysql-secrets creado por SealedSecret (02-sealed-secret.yaml)
+#   - PVC disponible (NFS del TrueNAS o StorageClass standard en Minikube)
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: wordpress-arq3d
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  labels:
+    app.kubernetes.io/part-of: arq3d-gitops
+    app.kubernetes.io/component: web-corporativa
+spec:
+  project: arq3d-prod
+
+  source:
+    repoURL: https://github.com/AlfonsoSanM06/TFG-asir
+    targetRevision: main
+    path: k8s-cluster/wordpress/wordpress-mysql
+
+    helm:
+      # values.yaml se carga por defecto; values-secrets.yaml NO va a Git.
+      # Las credenciales se inyectan via SealedSecret (fichero separado).
+      valueFiles:
+        - values.yaml
+      # Sobreescritura de valores específicos del entorno sin tocar el chart
+      parameters:
+        - name: "global.storageClass"
+          value: "standard"    # Minikube. En prod: "nfs-client" del TrueNAS
+        - name: "global.environment"
+          value: "prod"
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: wp
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 3m
+
+  # Condiciones de salud personalizadas
+  ignoreDifferences:
+    # ArgoCD ignora anotaciones que el propio K8s muta (ej. last-applied)
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/template/metadata/annotations/kubectl.kubernetes.io~1last-applied-configuration

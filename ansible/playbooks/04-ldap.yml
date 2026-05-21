@@ -1,0 +1,55 @@
+---
+# =============================================================================
+# 04-ldap.yml — Instalación y configuración de OpenLDAP en ldap-server
+#
+# Requiere variables sensibles en group_vars/all/vault.yml:
+#   ldap_admin_password: "..."
+#   ldap_bind_password:  "..."
+#
+# Ejecución:
+#   ansible-playbook playbooks/04-ldap.yml --ask-vault-pass
+# =============================================================================
+- name: "FASE 4 | OpenLDAP — Servidor de identidad ARQ3D"
+  hosts: ldap_servers
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    - name: "PRE | Verificar que las variables de vault están definidas"
+      ansible.builtin.assert:
+        that:
+          - ldap_admin_password is defined
+          - ldap_admin_password | length > 0
+          - ldap_bind_password is defined
+          - ldap_bind_password | length > 0
+        fail_msg: >-
+          Las variables 'ldap_admin_password' y 'ldap_bind_password' son obligatorias.
+          Defínelas en group_vars/all/vault.yml y cífralo con ansible-vault.
+
+  roles:
+    - role: hardening   # El hardening ya se ejecutó en el playbook 01, pero
+      tags: [hardening] # declararlo aquí lo hace idempotente si se corre solo.
+      when: false       # Descomenta si quieres re-aplicar hardening en LDAP aislado.
+
+    - role: ldap
+      tags: [ldap]
+
+  post_tasks:
+    - name: "POST | Verificar que slapd escucha en puerto 389"
+      ansible.builtin.wait_for:
+        host: "{{ ansible_host }}"
+        port: 389
+        timeout: 15
+        msg: "slapd no responde en puerto 389 tras la instalación."
+
+    - name: "POST | Test de bind anónimo (smoke test)"
+      ansible.builtin.command: >
+        ldapsearch -x -H ldap://{{ ansible_host }}
+        -b "{{ ldap_base_dn }}" "(objectClass=organizationalUnit)" ou
+      register: ldap_smoke
+      changed_when: false
+      failed_when: ldap_smoke.rc != 0
+
+    - name: "POST | Mostrar OUs encontradas"
+      ansible.builtin.debug:
+        msg: "{{ ldap_smoke.stdout_lines }}"

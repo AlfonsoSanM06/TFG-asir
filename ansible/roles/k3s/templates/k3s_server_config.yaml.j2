@@ -1,0 +1,23 @@
+# /etc/rancher/k3s/config.yaml — K3s Server (Master)
+# Gestionado por Ansible (rol: k3s). No editar manualmente.
+
+cluster-init: false
+disable:
+  - traefik
+  - servicelb
+
+node-ip: {{ ansible_host }}
+advertise-address: {{ ansible_host }}
+flannel-iface: eth0
+
+# TLS SAN: incluye la IP del nodo para que kubectl funcione desde fuera
+tls-san:
+  - {{ ansible_host }}
+  - {{ k3s_master_ip }}
+  - kubernetes.local
+
+# Kubeconfig accesible sin sudo (útil para CI/ArgoCD)
+write-kubeconfig-mode: "{{ k3s_kubeconfig_mode }}"
+
+# Directorio de datos (puede apuntar al NFS si se quiere HA state)
+data-dir: /var/lib/rancher/k3s

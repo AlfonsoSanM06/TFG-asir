@@ -1,0 +1,26 @@
+# =============================================================================
+# .gitignore — k8s-cluster/
+# Excluye ficheros con credenciales reales del repositorio.
+# =============================================================================
+
+# Ficheros de valores con secrets reales (passwords, tokens, etc.)
+values-secrets.yaml
+**/values-secrets.yaml
+
+# Kubeconfig local
+kubeconfig
+*.kubeconfig
+
+# Terraform state (puede contener datos sensibles del clúster)
+terraform.tfstate
+terraform.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+
+# Clave de backup del controller Sealed Secrets
+# (exportada con: kubectl get secret -n kube-system sealed-secrets-key -o yaml)
+sealed-secrets-key*.yaml
+
+# Fichero de contraseña del vault de Ansible (nunca a Git)
+.vault_pass
+vault_pass.txt

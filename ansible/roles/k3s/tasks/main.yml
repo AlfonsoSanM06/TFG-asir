@@ -1,0 +1,13 @@
+---
+# =============================================================================
+# roles/k3s/tasks/main.yml
+# La variable k3s_role (master|worker) viene del inventory por host.
+# =============================================================================
+
+- name: "K3s | Ejecutar instalación en Master"
+  ansible.builtin.include_tasks: install_master.yml
+  when: k3s_role == "master"
+
+- name: "K3s | Ejecutar instalación en Worker"
+  ansible.builtin.include_tasks: install_worker.yml
+  when: k3s_role == "worker"
