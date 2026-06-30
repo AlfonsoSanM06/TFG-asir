@@ -1,92 +1,81 @@
-# =============================================================================
-# MODULE vm — main.tf
-# Crea una única VM clonando una plantilla Cloud-Init en Proxmox VE.
-# Reutilizable para cualquier nodo del proyecto (masters, workers, ldap…).
-# Variables → variables.tf | Outputs → outputs.tf
-# =============================================================================
+resource "proxmox_virtual_environment_vm" "this" {
+  vm_id         = var.vm_id
+  name          = var.vm_name
+  description   = var.vm_description
+  node_name     = var.proxmox_node
+  on_boot       = true
+  tags          = concat(["terraform"], var.tags)
+  scsi_hardware = "virtio-scsi-single"
 
-resource "proxmox_vm_qemu" "this" {
-  vmid        = var.vm_id
-  name        = var.vm_name
-  desc        = var.vm_description
-  target_node = var.proxmox_node
-
-  # ---------------------------------------------------------------------------
   # Clonación desde plantilla Cloud-Init
-  # ---------------------------------------------------------------------------
-  clone      = var.template_name
-  full_clone = true   # Clone completo → independiente de la plantilla.
-  agent      = 1      # Habilita qemu-guest-agent (instalado vía Cloud-Init).
+  clone {
+    vm_id = var.template_vm_id
+    full  = false
+  }
 
-  # ---------------------------------------------------------------------------
+  # Agente QEMU
+  agent {
+    enabled = true
+  }
+
   # Arranque
-  # ---------------------------------------------------------------------------
-  boot   = "order=scsi0"
-  onboot = true
+  boot_order = ["scsi0"]
 
-  # ---------------------------------------------------------------------------
-  # Cómputo
-  # ---------------------------------------------------------------------------
-  cores   = var.cpu_cores
-  sockets = var.cpu_sockets
-  cpu     = var.cpu_type
-  memory  = var.ram_mb
-  balloon = var.balloon_mb
-
-  # ---------------------------------------------------------------------------
-  # Disco OS — Cloud-Init redimensiona automáticamente al clonar
-  # ---------------------------------------------------------------------------
-  disk {
-    slot     = "scsi0"
-    type     = "scsi"
-    storage  = var.storage_pool
-    size     = "${var.disk_size_gb}G"
-    discard  = "on"   # TRIM/UNMAP para thin-provisioning en LVM/ZFS.
-    ssd      = 1
-    iothread = 1      # Un thread de I/O por disco → mejor throughput.
+  cpu {
+    cores   = var.cpu_cores
+    sockets = var.cpu_sockets
+    type    = var.cpu_type
   }
 
-  # Disco Cloud-Init (obligatorio en plantillas CI de Proxmox)
-  disk {
-    slot    = "ide2"
-    type    = "ide"
-    storage = var.storage_pool
-    size    = "4M"
-    cdrom   = true
+  memory {
+    dedicated = var.ram_mb
+    floating  = var.balloon_mb
   }
 
-  # ---------------------------------------------------------------------------
+  # Disco OS
+  disk {
+    datastore_id = var.storage_pool
+    size         = var.disk_size_gb
+    interface    = "scsi0"
+    discard      = "on" # TRIM/UNMAP para thin-provisioning.
+    ssd          = true
+    iothread     = true
+  }
+
   # Red — VLAN tag aplicado en el puerto virtual
-  # ---------------------------------------------------------------------------
-  network {
+  network_device {
     model   = "virtio"
     bridge  = var.network_bridge
-    tag     = var.network_vlan
-    macaddr = ""  # Proxmox asigna MAC única automáticamente.
+    vlan_id = var.network_vlan > 0 ? var.network_vlan : null
   }
 
-  # ---------------------------------------------------------------------------
   # Cloud-Init
-  # ---------------------------------------------------------------------------
-  os_type    = "cloud-init"
-  ipconfig0  = "ip=${var.ip_address}/${var.cidr_prefix},gw=${var.gateway}"
-  nameserver = var.dns_servers
-  ciuser     = var.ci_user
-  sshkeys    = var.ci_ssh_key
+  initialization {
+    datastore_id = var.storage_pool
 
-  # ---------------------------------------------------------------------------
-  # Tags para organización en la UI de Proxmox
-  # ---------------------------------------------------------------------------
-  tags = join(";", concat(["terraform"], var.tags))
+    ip_config {
+      ipv4 {
+        address = "${var.ip_address}/${var.cidr_prefix}"
+        gateway = var.gateway
+      }
+    }
 
-  # ---------------------------------------------------------------------------
-  # Ciclo de vida: evita recrear la VM por cambios menores no funcionales
-  # ---------------------------------------------------------------------------
+    dns {
+      servers = split(" ", var.dns_servers)
+    }
+
+    user_account {
+      username = var.ci_user
+      keys     = [var.ci_ssh_key]
+    }
+  }
+
+  # Ciclo de vida
   lifecycle {
     ignore_changes = [
-      desc,
+      description,
       tags,
-      network,   # Evita drift por cambio de MAC autogenerada.
+      network_device, # Evita drift por cambio de MAC autogenerada.
     ]
   }
 }

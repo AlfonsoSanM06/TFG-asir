@@ -4,11 +4,11 @@ terraform {
   required_providers {
     helm = {
       source  = "hashicorp/helm"
-      version = "~> 2.17"   # 2.x con soporte completo de atomic/cleanup_on_fail
+      version = "~> 2.12"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = "~> 2.35"   # 2.x estable
+      version = "~> 2.25"
     }
   }
 }

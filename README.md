@@ -1,7 +1,7 @@
-# TFG-ASIR — ARQ3D Infrastructure
+# ARQ3D Infrastructure
 
-> **Proyecto de Fin de Grado — ASIR**  
-> Infraestructura cloud-native completa sobre Proxmox VE, orquestada con Terraform, Ansible, K3s y ArgoCD (GitOps).
+> **Proyecto de Infraestructura Proxmox-Kubernetes**  
+> Infraestructura cloud-native completa sobre Proxmox VE, orquestada con Terraform, Ansible, K3s y ArgoCD.
 
 ---
 
@@ -25,7 +25,7 @@
 
 ## 1. Visión general
 
-Este repositorio contiene la **infraestructura como código (IaC) completa** del proyecto ARQ3D. El objetivo es demostrar un stack DevOps/SRE de nivel de producción, cubriendo desde el aprovisionamiento bare-metal hasta el despliegue continuo de aplicaciones.
+Este repositorio contiene la **infraestructura** del proyecto ARQ3D. El objetivo es demostrar un stack de infraestructura que cubra desde el aprovisionamiento bare-metal hasta el despliegue continuo de aplicaciones
 
 ### Stack tecnológico
 
@@ -47,38 +47,9 @@ Este repositorio contiene la **infraestructura como código (IaC) completa** del
 
 ## 2. Arquitectura
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      PROXMOX VE (bare-metal)                │
-│                                                             │
-│  VLAN 10 — 192.168.10.0/24                                  │
-│  ┌──────────────────┐  ┌─────────────────┐                  │
-│  │  k8s-master-01   │  │   ldap-server   │                  │
-│  │  192.168.10.10   │  │  192.168.10.20  │                  │
-│  │  2 vCPU / 4 GiB  │  │  2 vCPU / 4 GiB │                  │
-│  └────────┬─────────┘  └─────────────────┘                  │
-│           │ K3s cluster                                      │
-│  ┌────────┴─────────┐  ┌─────────────────┐                  │
-│  │  k8s-worker-01   │  │  k8s-worker-02  │                  │
-│  │  192.168.10.11   │  │  192.168.10.12  │                  │
-│  │  4 vCPU / 8 GiB  │  │  4 vCPU / 8 GiB │                  │
-│  └──────────────────┘  └─────────────────┘                  │
-└─────────────────────────────────────────────────────────────┘
-         │ NFS mounts
-┌────────┴──────────┐
-│   TrueNAS (NFS)   │  Volúmenes persistentes (PVC)
-└───────────────────┘
+![flow1](./assets/proxmoxflow1.png)
 
-Flujo GitOps:
-  Developer → git push → GitHub
-                            │
-                         ArgoCD (polling / webhook)
-                            │
-              ┌─────────────┴────────────┐
-              ▼                          ▼
-     wordpress-arq3d            (futuro) nextcloud-arq3d
-     Helm Chart → ns: wp        Helm Chart → ns: nextcloud
-```
+![flow2](./assets/proxmoxflow2.png)
 
 ### Orden de despliegue (capas)
 
@@ -108,7 +79,7 @@ Flujo GitOps:
 - **Proxmox VE** accesible en red con token de API configurado.
 - **Plantilla Cloud-Init** `ubuntu-2204-cloud-init` creada en Proxmox.
 - **TrueNAS** con exports NFS configurados (para PVCs).
-- **Par de claves SSH** ED25519 (`~/.ssh/id_ed25519`).
+- **Par de claves SSH** ED25519 .
 
 ### Crear token de API en Proxmox
 
@@ -128,15 +99,15 @@ pveum user token add terraform@pam tfg-token --privsep=0
 TFG-asir/
 │
 ├── terraform-proxmox/              # Capa 1: VMs en Proxmox
-│   ├── versions.tf                 # Pin de Terraform y providers
-│   ├── backend.tf                  # Configuración del estado remoto
-│   ├── variables.tf                # Todas las variables del root module
-│   ├── main.tf                     # Orquestación de los 4 módulos VM
-│   ├── outputs.tf                  # IPs y VMIDs exportados
-│   ├── terraform.tfvars.example    # Plantilla de valores (copiar y rellenar)
+│   ├── versions.tf                 
+│   ├── backend.tf                  
+│   ├── variables.tf                
+│   ├── main.tf                     
+│   ├── outputs.tf                  
+│   ├── terraform.tfvars.example    
 │   ├── .gitignore
 │   └── modules/
-│       └── vm/                     # Módulo reutilizable: VM Proxmox Cloud-Init
+│       └── vm/                     
 │           ├── main.tf
 │           ├── variables.tf
 │           ├── outputs.tf
@@ -365,7 +336,7 @@ kubectl apply -f k8s-cluster/argocd-apps/01-root-app.yaml
 1. Crear `k8s-cluster/argocd-apps/NN-nombre-app.yaml` con el CRD `Application`.
 2. `git push` a la rama `main`.
 3. ArgoCD detecta el cambio en ≤ 3 minutos y despliega automáticamente.
-4. **Nunca ejecutes `kubectl apply` manualmente** — ArgoCD es la única fuente de verdad.
+4. **Nunca ejecutes `kubectl apply` manualmente**
 
 ### Acceso a la UI de ArgoCD
 
@@ -461,6 +432,9 @@ ssh arq3d@192.168.10.10 "kubectl get nodes"
 # ─────────────────────────────────────────────
 cd ../k8s-cluster/k8s_argocd/argocd_terraform/
 export KUBECONFIG=~/.kube/config-arq3d
+export AWS_ACCESS_KEY_ID="TU_CLAVE_AQUI"
+export AWS_SECRET_ACCESS_KEY="TU_CLAVE_SECRETA_AQUI"
+#para poder tener el backend configurado 
 terraform init
 terraform apply
 # Verificar pods

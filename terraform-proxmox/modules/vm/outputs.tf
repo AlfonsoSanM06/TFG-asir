@@ -1,16 +1,17 @@
 # =============================================================================
 # MODULE vm — outputs.tf
 # Valores exportados al root module tras el apply.
+# Provider: bpg/proxmox → recurso proxmox_virtual_environment_vm
 # =============================================================================
 
 output "vm_id" {
   description = "VMID de la VM creada en Proxmox."
-  value       = proxmox_vm_qemu.this.vmid
+  value       = proxmox_virtual_environment_vm.this.vm_id
 }
 
 output "vm_name" {
   description = "Nombre de la VM creada en Proxmox."
-  value       = proxmox_vm_qemu.this.name
+  value       = proxmox_virtual_environment_vm.this.name
 }
 
 output "ip" {

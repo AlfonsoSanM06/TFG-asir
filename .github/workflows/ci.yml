@@ -1,0 +1,57 @@
+name: Workflow-Validations
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    paths-ignore: [ "**.md" ]
+
+jobs:
+  validate-terraform:
+    name: validar Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: descargar codigo
+        uses: actions/checkout@v4
+
+      - name: instalar terraform
+        uses: hashicorp/setup-terraform@v3
+        
+      - name: terraform Init
+        run: terraform init -backend=false
+        working-directory: ./terraform-proxmox
+
+      - name: terraform validate
+        run: terraform validate
+        working-directory: ./terraform-proxmox
+        
+  validate-ansible:
+    name: validar ansible
+    runs-on: ubuntu-latest
+
+    steps:
+      -name: descargar codigo
+      uses: actions/checkout@v4
+
+      -name: instalar ansible-Lint
+      run: pip install ansible-Lint
+
+      -name: ansible - lint
+      run: ansible-lint ansible/**/*.yml
+
+  validate-k8s:
+    name: validar Kubernetes y Helm
+    runs-on: ubuntu-latest
+    steps:
+      - name: descargar el codigo
+        uses: actions/checkout@v4
+
+      - name: instalar helm
+        uses: azure/setup-helm@v4
+        
+      - name: Helm lint
+        run: helm lint k8s-cluster/wordpress/wordpress-mysql/
+        
+
+      
