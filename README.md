@@ -49,6 +49,8 @@ Este repositorio contiene la **infraestructura** del proyecto ARQ3D. El objetivo
 
 ![flow1](./assets/proxmoxflow1.png)
 
+
+
 ![flow2](./assets/proxmoxflow2.png)
 
 ### Orden de despliegue (capas)
@@ -187,24 +189,7 @@ terraform plan
 
 # 4. Aprovisionar las VMs
 terraform apply
-
-# 5. Exportar IPs para Ansible
-terraform output -json > ../ansible/inventory_vars.json
 ```
-
-### Módulo `vm` — parámetros clave
-
-| Variable | Tipo | Descripción |
-|---|---|---|
-| `vm_id` | `number` | VMID único en Proxmox |
-| `vm_name` | `string` | Nombre de la VM |
-| `proxmox_node` | `string` | Nodo Proxmox destino |
-| `template_name` | `string` | Plantilla Cloud-Init base |
-| `cpu_cores` | `number` | Núcleos virtuales |
-| `ram_mb` | `number` | Memoria en MiB |
-| `disk_size_gb` | `number` | Tamaño del disco OS |
-| `ip_address` | `string` | IP estática (VLAN 10) |
-| `ci_ssh_key` | `string` | Clave pública SSH (sensitive) |
 
 > **Outputs exportados:** `vm_id`, `vm_name`, `ip` — disponibles con `terraform output`.
 
