@@ -1,7 +1,7 @@
 ---
 # =============================================================================
 # INVENTORY — arq3d-infrastructure
-# IPs estáticas generadas por Terraform (VLAN 10: 192.168.10.0/24).
+# IPs estáticas generadas por Terraform (VLAN 10: 10.10.10.0/24).
 # Actualiza este fichero con: terraform output -json | python3 scripts/gen_inventory.py
 # =============================================================================
 
@@ -26,16 +26,16 @@ all:
         k8s_masters:
           hosts:
             k8s-master-01:
-              ansible_host: 192.168.10.10
+              ansible_host: 10.10.10.11
               k3s_role: master
 
         k8s_workers:
           hosts:
             k8s-worker-01:
-              ansible_host: 192.168.10.11
+              ansible_host: 10.10.10.12
               k3s_role: worker
             k8s-worker-02:
-              ansible_host: 192.168.10.12
+              ansible_host: 10.10.10.13
               k3s_role: worker
 
     # -------------------------------------------------------------------------
@@ -44,7 +44,7 @@ all:
     identity_servers:
       hosts:
         ldap-server:
-          ansible_host: 192.168.10.20
+          ansible_host: 10.10.10.20
 
     # -------------------------------------------------------------------------
     # Grupo virtual: todos los nodos gestionados por Ansible

@@ -1,25 +1,21 @@
-# =============================================================================
-# VARIABLES — arq3d-infrastructure
-# Todas las credenciales sensibles se leen desde TF_VAR_* o terraform.tfvars
-# (nunca hardcodeadas aquí).
-# =============================================================================
 
-# -----------------------------------------------------------------------------
+# VARIABLES — arq3d-infrastructure
+
 # Conexión a Proxmox
-# -----------------------------------------------------------------------------
+
 variable "proxmox_api_url" {
   description = "URL completa de la API REST de Proxmox. Ej: https://192.168.1.1:8006/api2/json"
   type        = string
 }
 
-variable "proxmox_api_token_id" {
-  description = "ID del token de API de Proxmox. Formato: user@realm!token-name"
+variable "proxmox_user" {
+  description = "Usuario de Proxmox con permisos de administrador. Formato: user@realm"
   type        = string
-  sensitive   = true
+  default     = "root@pam"
 }
 
-variable "proxmox_api_token_secret" {
-  description = "Secreto del token de API de Proxmox."
+variable "proxmox_password" {
+  description = "Contraseña del usuario de Proxmox."
   type        = string
   sensitive   = true
 }
@@ -36,13 +32,12 @@ variable "proxmox_tls_insecure" {
   default     = false
 }
 
-# -----------------------------------------------------------------------------
 # Plantilla Cloud-Init base
-# -----------------------------------------------------------------------------
-variable "vm_template_name" {
-  description = "Nombre de la plantilla Cloud-Init en Proxmox (Ubuntu 22.04 / Debian 12)."
-  type        = string
-  default     = "ubuntu-2204-cloud-init"
+
+variable "vm_template_id" {
+  description = "VMID numérico de la plantilla Cloud-Init"
+  type        = number
+  default     = 9000
 }
 
 variable "vm_storage_pool" {
@@ -51,9 +46,9 @@ variable "vm_storage_pool" {
   default     = "local-lvm"
 }
 
-# -----------------------------------------------------------------------------
+
 # Red — VLAN 10
-# -----------------------------------------------------------------------------
+
 variable "network_bridge" {
   description = "Bridge de red de Proxmox que mapea a la VLAN 10."
   type        = string
@@ -84,9 +79,8 @@ variable "network_cidr_prefix" {
   default     = 24
 }
 
-# -----------------------------------------------------------------------------
 # Cloud-Init — Credenciales base
-# -----------------------------------------------------------------------------
+
 variable "ci_ssh_public_key" {
   description = "Clave pública SSH que se inyectará en todas las VMs."
   type        = string
@@ -99,9 +93,9 @@ variable "ci_default_user" {
   default     = "arq3d"
 }
 
-# -----------------------------------------------------------------------------
+
 # VM — Nodo Master K8s
-# -----------------------------------------------------------------------------
+
 variable "master_vm_id" {
   description = "VMID único en Proxmox para el nodo master."
   type        = number
@@ -129,9 +123,9 @@ variable "master_disk_gb" {
   default = 40
 }
 
-# -----------------------------------------------------------------------------
+
 # VM — Worker 01
-# -----------------------------------------------------------------------------
+
 variable "worker01_vm_id" {
   type    = number
   default = 111
@@ -157,9 +151,9 @@ variable "worker01_disk_gb" {
   default = 40
 }
 
-# -----------------------------------------------------------------------------
+
 # VM — Worker 02
-# -----------------------------------------------------------------------------
+
 variable "worker02_vm_id" {
   type    = number
   default = 112
@@ -185,9 +179,8 @@ variable "worker02_disk_gb" {
   default = 40
 }
 
-# -----------------------------------------------------------------------------
 # VM — LDAP Server
-# -----------------------------------------------------------------------------
+
 variable "ldap_vm_id" {
   type    = number
   default = 120

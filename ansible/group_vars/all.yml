@@ -6,15 +6,12 @@
 # cifrado con ansible-vault.
 # =============================================================================
 
-# -----------------------------------------------------------------------------
 # Sistema base
-# -----------------------------------------------------------------------------
 system_locale: "es_ES.UTF-8"
 system_timezone: "Europe/Madrid"
 
-# -----------------------------------------------------------------------------
+
 # Hardening SSH
-# -----------------------------------------------------------------------------
 ssh_port: 22
 ssh_permit_root_login: "no"
 ssh_password_authentication: "no"
@@ -24,16 +21,11 @@ ssh_client_alive_count_max: 2
 ssh_allowed_users:
   - arq3d
 
-# -----------------------------------------------------------------------------
 # Firewall (ufw)
-# -----------------------------------------------------------------------------
-# Los puertos abiertos en TODOS los nodos.
 firewall_allowed_tcp_ports:
-  - "{{ ssh_port }}"   # SSH
+  - "{{ ssh_port }}"
 
-# -----------------------------------------------------------------------------
 # NFS — TrueNAS (VLAN 20)
-# -----------------------------------------------------------------------------
 truenas_server_ip: "192.168.20.100"          # IP del TrueNAS en VLAN 20.
 nfs_mount_point: "/mnt/nfs/arq3d-data"       # Ruta local en cada VM.
 nfs_export_path: "/mnt/pool/arq3d-data"      # Export del TrueNAS.
@@ -41,9 +33,8 @@ nfs_options: "rw,sync,hard,intr,rsize=131072,wsize=131072,timeo=14"
 nfs_owner: arq3d
 nfs_group: arq3d
 
-# -----------------------------------------------------------------------------
+
 # K3s
-# -----------------------------------------------------------------------------
 k3s_version: "v1.29.4+k3s1"
 k3s_master_ip: "192.168.10.10"
 k3s_api_port: 6443

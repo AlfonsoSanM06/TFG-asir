@@ -1,8 +1,5 @@
-# =============================================================================
+
 # OUTPUTS — arq3d-infrastructure
-# Expone los valores clave tras el apply para que Ansible los consuma.
-# Úsalos con: terraform output -json > ../ansible/inventory_vars.json
-# =============================================================================
 
 output "k8s_master_01" {
   description = "VMID e IP del nodo master de Kubernetes."
@@ -40,9 +37,10 @@ output "ldap_server" {
   }
 }
 
-# Bloque conveniente para pegar directamente en el inventory.yml de Ansible.
+# Bloque para inventory.yml de Ansible
+
 output "ansible_inventory_hint" {
-  description = "IPs de todos los nodos para construir el inventario de Ansible."
+  description = "IPs de todos los nodos."
   value = {
     k8s_masters = [module.k8s_master_01.ip]
     k8s_workers = [
